@@ -149,7 +149,7 @@ def plot_log_lines(list_to_plot, list_name, axis_label, folder, title, x_axis = 
 
     plt.xlabel(axis_label[0], fontsize=20)
     plt.ylabel(axis_label[1], fontsize=20)
-    plt.legend(fontsize=20)
+    plt.legend(fontsize=10)
     if show:
         plt.show()
     else:
@@ -170,7 +170,7 @@ def plot_lines(list_to_plot, list_name, axis_label, folder, title, x_axis = None
             plt.plot(x_axis, item[0], label = item[1])
     plt.xlabel(axis_label[0], fontsize=20)
     plt.ylabel(axis_label[1], fontsize=20)
-    plt.legend(fontsize=20)
+    plt.legend(fontsize=10)
     if show:
         plt.show()
     else:
