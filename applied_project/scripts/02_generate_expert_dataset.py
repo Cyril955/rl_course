@@ -93,5 +93,5 @@ if __name__ == "__main__":
         save_path=args.save_path,
     )
 
-# python generate_expert_dataset.py --env-id CartPole-v1 --model-path models/experts/CartPole-v1/ppo_expert_seed_0.zip --n-trajectories 10 --save-path data/expert/CartPole-v1/expert_K10_seed0.npz
+# python scripts/02_generate_expert_dataset.py --env-id CartPole-v1 --model-path models/experts/CartPole-v1/ppo_expert_seed_0.zip --n-trajectories 10 --save-path data/expert/CartPole-v1/expert_K10_seed0.npz
 # repeat for: K = 1, 10, 50 and seed = 0, 1, 2

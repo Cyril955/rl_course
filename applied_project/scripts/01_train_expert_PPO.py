@@ -60,5 +60,5 @@ if __name__ == "__main__":
         save_dir=args.save_dir,
     )
 
-# python train_expert_PPO.py --env-id CartPole-v1 --seed 0 --timesteps 100000
-# python train_expert_PPO.py --env-id Acrobot-v1 --seed 0 --timesteps 300000
+# python scripts/01_train_expert_PPO.py --env-id CartPole-v1 --seed 0 --timesteps 100000
+# python scripts/01_train_expert_PPO.py --env-id Acrobot-v1 --seed 0 --timesteps 300000

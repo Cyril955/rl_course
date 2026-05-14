@@ -74,9 +74,9 @@ if __name__ == "__main__":
     print(f"Mean return: {mean_return:.2f} ± {std_return:.2f}")
 
 # Without rendering:
-# python evaluate_expert_policy.py --env-id CartPole-v1 --model-path models/experts/CartPole-v1/ppo_expert_seed_0.zip
-# python evaluate_expert_policy.py --env-id Acrobot-v1 --model-path models/experts/Acrobot-v1/ppo_expert_seed_0.zip
+# python scripts/04_evaluate_expert_policy.py --env-id CartPole-v1 --model-path models/experts/CartPole-v1/ppo_expert_seed_0.zip
+# python scripts/04_evaluate_expert_policy.py --env-id Acrobot-v1 --model-path models/experts/Acrobot-v1/ppo_expert_seed_0.zip
 
 # With rendering:
-# python evaluate_expert_policy.py --env-id CartPole-v1 --model-path models/experts/CartPole-v1/ppo_expert_seed_0.zip --episodes 3 --render --sleep 0.02
-# python evaluate_expert_policy.py --env-id Acrobot-v1 --model-path models/experts/Acrobot-v1/ppo_expert_seed_0.zip --episodes 3 --render --sleep 0.02
+# python scripts/04_evaluate_expert_policy.py --env-id CartPole-v1 --model-path models/experts/CartPole-v1/ppo_expert_seed_0.zip --episodes 3 --render --sleep 0.02
+# python scripts/04_evaluate_expert_policy.py --env-id Acrobot-v1 --model-path models/experts/Acrobot-v1/ppo_expert_seed_0.zip --episodes 3 --render --sleep 0.02
