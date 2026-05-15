@@ -1,0 +1,32 @@
+# ===============================
+# TRAINING PARAMETERS
+# ===============================
+
+# Behavior Cloning parameters
+bc_hidden_size: 64
+bc_epochs: 200
+bc_lr: 3e-4
+bc_batch_size: 256
+
+# SAC parameters
+sac_hidden_size: 64
+sac_lr: 3e-4
+
+# CSIL parameters
+gamma: 0.99
+tau: 0.005
+alpha_csil: 1.0
+buffer_size: 200000
+batch_size: 256
+start_steps: 1000      # random exploration before SAC kicks in
+n_episodes: 1000
+early_stop_reward: None
+
+device: "cpu"
+verbose: True
+
+
+# ===============================
+# EVALUATION PARAMETERS
+# ===============================
+eval_n_episodes: 100
