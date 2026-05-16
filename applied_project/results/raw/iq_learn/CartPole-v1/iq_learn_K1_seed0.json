@@ -1,0 +1,9 @@
+{
+  "env": "CartPole-v1",
+  "method": "iq_learn",
+  "K": 1,
+  "train_seed": 0,
+  "mean_return": 20.05,
+  "std_return": 4.5108203245086145,
+  "n_episodes": 20
+}

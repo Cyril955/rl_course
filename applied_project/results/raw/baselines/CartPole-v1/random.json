@@ -1,0 +1,7 @@
+{
+  "env": "CartPole-v1",
+  "method": "random",
+  "mean_return": 21.733333333333334,
+  "std_return": 12.856731915831313,
+  "n_episodes": 60
+}

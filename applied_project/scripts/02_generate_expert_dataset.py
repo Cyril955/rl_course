@@ -1,9 +1,39 @@
 import argparse
+import sys
+import types
 from pathlib import Path
 
 import gymnasium as gym
 import numpy as np
 from stable_baselines3 import PPO
+
+
+def _patch_numpy_core():
+    """Shim numpy._core.* → numpy.core.* for models saved with numpy ≥ 2.0."""
+    import importlib
+    import numpy.core as nc
+    _core = types.ModuleType("numpy._core")
+    _core.__path__ = []
+    sys.modules.setdefault("numpy._core", _core)
+    for name in ["numeric", "multiarray", "fromnumeric", "shape_base",
+                 "function_base", "arrayprint", "defchararray", "umath"]:
+        full = f"numpy._core.{name}"
+        if full not in sys.modules:
+            try:
+                src = importlib.import_module(f"numpy.core.{name}")
+                sys.modules[full] = src
+            except ImportError:
+                pass
+
+
+def load_ppo(model_path: str) -> PPO:
+    """Load a PPO model robustly across numpy and Python versions."""
+    _patch_numpy_core()
+    custom_objects = {
+        "lr_schedule": lambda _: 3e-4,
+        "clip_range": lambda _: 0.2,
+    }
+    return PPO.load(model_path, custom_objects=custom_objects)
 
 
 def generate_expert_dataset(
@@ -14,7 +44,7 @@ def generate_expert_dataset(
     deterministic: bool = True,
 ) -> None:
     env = gym.make(env_id)
-    model = PPO.load(model_path)
+    model = load_ppo(model_path)
 
     all_states = []
     all_actions = []

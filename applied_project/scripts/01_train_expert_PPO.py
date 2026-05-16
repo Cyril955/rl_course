@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-import gymnasium as gym
+import gym
 from stable_baselines3 import PPO
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.utils import set_random_seed
