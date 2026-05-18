@@ -18,7 +18,6 @@ results/raw/
   Acrobot-v1/
     (same structure)
 """
-import argparse
 import json
 from pathlib import Path
 
@@ -113,6 +112,7 @@ def _draw_curve(ax, k_results: dict, method: str, floor: float) -> None:
         [max(floor, m - s) for m, s in zip(means, stds)],
         [m + s for m, s in zip(means, stds)],
         alpha=0.2, color=COLOURS[method],
+        linewidth=0.0, edgecolor=None,
     )
 
 
@@ -126,20 +126,25 @@ def plot_env(ax: plt.Axes, env_id: str) -> None:
         ax.set_title(f"{env_id}\n(no results yet)")
         return
 
-    _draw_curve(ax, iq_results,   "iq_learn", floor)
-    _draw_curve(ax, csil_results, "csil",     floor)
-
     # Determine x range from whichever results exist
     all_k = sorted(set(list(iq_results) + list(csil_results)))
     x_range = [all_k[0], all_k[-1]]
 
     for method in ("expert", "random"):
-        mean, _ = collect_baseline(env_id, method)
+        mean, std = collect_baseline(env_id, method)
         if mean is None:
             continue
         ax.hlines(mean, x_range[0], x_range[-1],
                   colors=COLOURS[method], linestyles="--", linewidth=1.5,
                   label=LABELS[method])
+        if std and std > 0:
+            ax.fill_between(x_range,
+                            [max(floor, mean - std)] * 2,
+                            [mean + std] * 2,
+                            alpha=0.15, color=COLOURS[method])
+
+    _draw_curve(ax, iq_results,   "iq_learn", floor)
+    _draw_curve(ax, csil_results, "csil",     floor)
 
     ax.set_title(env_id, fontsize=12)
     ax.set_xlabel("Number of Expert Trajectories", fontsize=10)
@@ -148,31 +153,36 @@ def plot_env(ax: plt.Axes, env_id: str) -> None:
     ax.grid(True, alpha=0.3)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--envs", nargs="+", default=ENV_IDS)
-    parser.add_argument("--out", type=str, default=str(FIGURES_DIR / "comparison_figure.png"))
-    parser.add_argument("--dpi", type=int, default=150)
-    args = parser.parse_args()
+FIGURES = [
+    # (envs, out_path, show_title)
+    (ENV_IDS,          FIGURES_DIR / "comparison_figure_5_seeds.png",  True),
+    (["CartPole-v1"],  FIGURES_DIR / "cartpole_figure_5_seeds.png",    False),
+    (["Acrobot-v1"],   FIGURES_DIR / "acrobot_figure_5_seeds.png",     False),
+]
 
-    n = len(args.envs)
+
+def save_figure(envs: list, out_path: Path, show_title: bool, dpi: int = 300) -> None:
+    n = len(envs)
     fig, axes = plt.subplots(1, n, figsize=(5 * n, 4))
     if n == 1:
         axes = [axes]
 
-    for ax, env_id in zip(axes, args.envs):
+    for ax, env_id in zip(axes, envs):
         plot_env(ax, env_id)
+        if not show_title:
+            ax.set_title("")
 
-    fig.suptitle("Offline IL Results (IQ-Learn vs Expert vs Random)", fontsize=13)
     fig.tight_layout()
-    fig.text(0.5, -0.02, "Shaded regions: ±1 std over 5 seeds",
-             ha="center", fontsize=8, style="italic", color="gray")
 
-    out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out_path, dpi=args.dpi, bbox_inches="tight")
+    fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
     print(f"Figure saved → {out_path}")
     plt.close(fig)
+
+
+def main() -> None:
+    for envs, out_path, show_title in FIGURES:
+        save_figure(envs, out_path, show_title)
 
 
 if __name__ == "__main__":
