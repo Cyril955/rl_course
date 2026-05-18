@@ -28,8 +28,9 @@ import numpy as np
 
 ENV_IDS = ["CartPole-v1", "Acrobot-v1"]
 BASELINES_DIR = Path("results/raw/baselines")
-IQ_LEARN_DIR = Path("results/raw/iq_learn")
-FIGURES_DIR = Path("results/figures")
+IQ_LEARN_DIR  = Path("results/raw/iq_learn")
+CSIL_DIR      = Path("results/raw/csil")
+FIGURES_DIR   = Path("results/figures")
 
 # Minimum possible episode return per env (used to clip lower std band)
 ENV_RETURN_FLOOR = {
@@ -39,12 +40,14 @@ ENV_RETURN_FLOOR = {
 
 # Colours match Figure 2 style roughly
 COLOURS = {
-    "iq_learn": "#9f0fbf",   # purple (solid)
+    "iq_learn": "#9f0fbf",   # purple
+    "csil":     "#0fa7d1",   # blue
     "expert":   "#4CAF50",   # green (dashed)
     "random":   "#9E9E9E",   # grey (dashed)
 }
 LABELS = {
     "iq_learn": r"IQ-Learn ($\chi^2$)",
+    "csil":     "CSIL",
     "expert":   "Expert (PPO)",
     "random":   "Random",
 }
@@ -55,16 +58,16 @@ def load_json(path: Path) -> dict:
         return json.load(f)
 
 
-def collect_iq_results(env_id: str) -> dict[int, list[float]]:
-    """Return {K: [mean_return per seed]} for iq_learn runs."""
-    env_dir = IQ_LEARN_DIR / env_id
+def collect_results(results_dir: Path, env_id: str, glob: str) -> dict[int, list[float]]:
+    """Return {K: [mean_return per seed]} by globbing JSON files in results_dir/env_id/."""
+    env_dir = results_dir / env_id
+    if not env_dir.exists():
+        return {}
     k_to_returns: dict[int, list[float]] = {}
-
-    for p in sorted(env_dir.glob("iq_learn_K*_seed*.json")):
+    for p in sorted(env_dir.glob(glob)):
         d = load_json(p)
         k = d["K"]
         k_to_returns.setdefault(k, []).append(d["mean_return"])
-
     return k_to_returns
 
 
@@ -90,30 +93,48 @@ def collect_baseline(env_id: str, method: str) -> tuple[float, float]:
     raise ValueError(f"Unknown method: {method}")
 
 
-def plot_env(ax: plt.Axes, env_id: str) -> None:
-    k_results = collect_iq_results(env_id)
+MARKERS = {
+    "iq_learn": "^",   # triangle
+    "csil":     "o",   # circle
+}
+
+
+def _draw_curve(ax, k_results: dict, method: str, floor: float) -> None:
+    """Plot mean line + shaded ±1 std band for one IL method."""
     if not k_results:
-        ax.set_title(f"{env_id}\n(no IQ-Learn results yet)")
         return
-
-    floor = ENV_RETURN_FLOOR.get(env_id, -np.inf)
     k_sorted = sorted(k_results.keys())
-    iq_means = [float(np.mean(k_results[k])) for k in k_sorted]
-    iq_stds = [float(np.std(k_results[k])) for k in k_sorted]
-
-    # IQ-Learn curve
-    ax.plot(k_sorted, iq_means, "o-", color=COLOURS["iq_learn"], label=LABELS["iq_learn"], linewidth=1.5)
+    means = [float(np.mean(k_results[k])) for k in k_sorted]
+    stds  = [float(np.std(k_results[k]))  for k in k_sorted]
+    ax.plot(k_sorted, means, f"{MARKERS[method]}-",
+            color=COLOURS[method], label=LABELS[method], linewidth=1.5, markersize=6)
     ax.fill_between(
         k_sorted,
-        [max(floor, m - s) for m, s in zip(iq_means, iq_stds)],
-        [m + s for m, s in zip(iq_means, iq_stds)],
-        alpha=0.2, color=COLOURS["iq_learn"],
+        [max(floor, m - s) for m, s in zip(means, stds)],
+        [m + s for m, s in zip(means, stds)],
+        alpha=0.2, color=COLOURS[method],
     )
 
-    # Horizontal baselines
-    x_range = [k_sorted[0], k_sorted[-1]]
+
+def plot_env(ax: plt.Axes, env_id: str) -> None:
+    floor = ENV_RETURN_FLOOR.get(env_id, -np.inf)
+
+    iq_results   = collect_results(IQ_LEARN_DIR, env_id, "iq_learn_K*_seed*.json")
+    csil_results = collect_results(CSIL_DIR,     env_id, "csil_K*_seed*.json")
+
+    if not iq_results and not csil_results:
+        ax.set_title(f"{env_id}\n(no results yet)")
+        return
+
+    _draw_curve(ax, iq_results,   "iq_learn", floor)
+    _draw_curve(ax, csil_results, "csil",     floor)
+
+    # Determine x range from whichever results exist
+    all_k = sorted(set(list(iq_results) + list(csil_results)))
+    x_range = [all_k[0], all_k[-1]]
+
     for method in ("expert", "random"):
-        mean, std = collect_baseline(env_id, method)
+        mean, _ = collect_baseline(env_id, method)
         if mean is None:
             continue
         ax.hlines(mean, x_range[0], x_range[-1],
@@ -144,7 +165,7 @@ def main() -> None:
 
     fig.suptitle("Offline IL Results (IQ-Learn vs Expert vs Random)", fontsize=13)
     fig.tight_layout()
-    fig.text(0.5, -0.02, "Shaded regions: ±1 std over 3 seeds",
+    fig.text(0.5, -0.02, "Shaded regions: ±1 std over 5 seeds",
              ha="center", fontsize=8, style="italic", color="gray")
 
     out_path = Path(args.out)
@@ -157,5 +178,5 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 
-# python scripts/06_plot_comparison_figure.py
-# python scripts/06_plot_comparison_figure.py --out results/figures/comparison_figure_cartpole.png --envs CartPole-v1
+# python scripts/07_plot_comparison_figure.py
+# python scripts/07_plot_comparison_figure.py --out results/figures/comparison_figure_cartpole.png --envs CartPole-v1

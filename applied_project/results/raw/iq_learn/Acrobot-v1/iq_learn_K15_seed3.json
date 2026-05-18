@@ -1,0 +1,9 @@
+{
+  "env": "Acrobot-v1",
+  "method": "iq_learn",
+  "K": 15,
+  "train_seed": 3,
+  "mean_return": -78.65,
+  "std_return": 15.437859307559451,
+  "n_episodes": 20
+}

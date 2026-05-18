@@ -133,7 +133,7 @@ if __name__ == "__main__":
     main()
 
 # Example:
-# python scripts/04_evaluate_iq_learn.py \
+# python scripts/05_evaluate_iq_learn.py \
 #   --env-id CartPole-v1 \
 #   --model-path models/iq_learn/CartPole-v1/K10_seed0.pt \
 #   --K 10 --train-seed 0 \

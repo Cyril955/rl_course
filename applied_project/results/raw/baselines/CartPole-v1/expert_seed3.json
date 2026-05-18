@@ -1,0 +1,8 @@
+{
+  "env": "CartPole-v1",
+  "method": "expert",
+  "seed": 3,
+  "mean_return": 500.0,
+  "std_return": 0.0,
+  "n_episodes": 20
+}

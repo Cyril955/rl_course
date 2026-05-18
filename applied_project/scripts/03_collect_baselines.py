@@ -43,7 +43,7 @@ def load_ppo(model_path) -> PPO:
 
 
 ENV_IDS = ["CartPole-v1", "Acrobot-v1"]
-SEEDS = [0, 1, 2]
+SEEDS = [0, 1, 2, 3, 4]
 N_EPISODES = 20
 EXPERT_MODEL_DIR = Path("models/experts")
 RESULTS_DIR = Path("results/raw/baselines")
@@ -153,4 +153,4 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 
-# python scripts/05_collect_baselines.py
+# python scripts/03_collect_baselines.py

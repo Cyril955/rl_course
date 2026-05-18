@@ -13,7 +13,7 @@ PYTHON="${PYTHON:-$(which python3)}"
 # ── Configuration ─────────────────────────────────────────────────────────────
 ENVS=("CartPole-v1" "Acrobot-v1")
 K_VALUES=(1 3 7 10 15)        # Expert trajectory counts to sweep
-SEEDS=(0 1 2)                 # 3 seeds → mean ± std in the plot
+SEEDS=(0 1 2 3 4)             # 5 seeds → mean ± std in the plot
 EXPERT_POOL_K=15              # Trajectories in the expert pool (must be ≥ max(K_VALUES))
 LEARN_STEPS_CARTPOLE=100000
 LEARN_STEPS_ACROBOT=200000
@@ -69,7 +69,7 @@ echo ""
 echo "============================================================"
 echo " STEP 3: Baselines"
 echo "============================================================"
-$PYTHON scripts/05_collect_baselines.py --n-episodes "$N_EVAL_EPISODES"
+$PYTHON scripts/03_collect_baselines.py --n-episodes "$N_EVAL_EPISODES" --seeds "${SEEDS[@]}"
 
 # ── Step 4: IQ-Learn sweep (env × K × seed) ───────────────────────────────────
 echo ""
@@ -101,7 +101,7 @@ for ENV in "${ENVS[@]}"; do
       if [ "$ENV" = "Acrobot-v1" ]; then SUBSAMPLE_FREQ=5; fi
 
       # Train
-      $PYTHON scripts/03_train_iq_learn.py \
+      $PYTHON scripts/04_train_iq_learn.py \
         --env-id "$ENV" \
         --expert-npz "$EXPERT_NPZ" \
         --n-demos "$K" \
@@ -111,7 +111,7 @@ for ENV in "${ENVS[@]}"; do
         --output-model "$MODEL_OUT"
 
       # Evaluate
-      $PYTHON scripts/04_evaluate_iq_learn.py \
+      $PYTHON scripts/05_evaluate_iq_learn.py \
         --env-id "$ENV" \
         --model-path "$MODEL_OUT" \
         --n-episodes "$N_EVAL_EPISODES" \
@@ -122,12 +122,54 @@ for ENV in "${ENVS[@]}"; do
   done
 done
 
-# ── Step 5: Plot ──────────────────────────────────────────────────────────────
+# ── Step 5: CSIL sweep (env × K × seed) ──────────────────────────────────────
 echo ""
 echo "============================================================"
-echo " STEP 5: Plotting Comparison Figure"
+echo " STEP 5: CSIL training sweep"
 echo "============================================================"
-$PYTHON scripts/06_plot_comparison_figure.py
+
+for ENV in "${ENVS[@]}"; do
+  N_EPISODES_CSIL=1000
+  if [ "$ENV" = "Acrobot-v1" ]; then N_EPISODES_CSIL=3000; fi
+
+  # Early-stop only for CartPole (Acrobot reward is negative, target unclear)
+  CSIL_EXTRA_ARGS=()
+  if [ "$ENV" = "CartPole-v1" ]; then
+    CSIL_EXTRA_ARGS+=("--early-stop-reward" "495")
+  fi
+
+  for SEED in "${SEEDS[@]}"; do
+    EXPERT_NPZ="data/expert/${ENV}/expert_K${EXPERT_POOL_K}_seed${SEED}.npz"
+
+    for K in "${K_VALUES[@]}"; do
+      RESULT_JSON="results/raw/csil/${ENV}/csil_K${K}_seed${SEED}.json"
+
+      if [ -f "$RESULT_JSON" ]; then
+        echo "[SKIP] $RESULT_JSON"
+        continue
+      fi
+
+      echo ""
+      echo "[RUN ] CSIL: $ENV  K=$K  seed=$SEED  episodes=$N_EPISODES_CSIL"
+
+      $PYTHON scripts/06_train_csil.py \
+        --env-id "$ENV" \
+        --expert-npz "$EXPERT_NPZ" \
+        --n-demos "$K" \
+        --seed "$SEED" \
+        --n-episodes "$N_EPISODES_CSIL" \
+        --save-json "$RESULT_JSON" \
+        ${CSIL_EXTRA_ARGS[@]+"${CSIL_EXTRA_ARGS[@]}"}
+    done
+  done
+done
+
+# ── Step 6: Plot ──────────────────────────────────────────────────────────────
+echo ""
+echo "============================================================"
+echo " STEP 6: Plotting Comparison Figure"
+echo "============================================================"
+$PYTHON scripts/07_plot_comparison_figure.py
 
 echo ""
 echo "Done!  Figure saved to results/figures/comparison_figure.png"

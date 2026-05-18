@@ -274,7 +274,7 @@ if __name__ == "__main__":
     main()
 
 # Example – single run:
-# python scripts/03_train_iq_learn.py \
+# python scripts/04_train_iq_learn.py \
 #   --env-id CartPole-v1 \
 #   --expert-npz data/expert/CartPole-v1/expert_K15_seed0.npz \
 #   --n-demos 10 --seed 0 --learn-steps 100000 --subsample-freq 20
