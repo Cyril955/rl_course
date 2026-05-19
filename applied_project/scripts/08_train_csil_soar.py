@@ -78,10 +78,17 @@ def main() -> None:
                         help="Std-deviation clipping threshold σ for OptimisticQ-NN.")
     # Evaluation
     parser.add_argument("--n-eval-episodes", type=int, default=20)
+    # Device
+    parser.add_argument("--device", type=str, default="cpu",
+                        help="Torch device to use: 'cpu', 'cuda', or 'cuda:0' etc.")
     # Output
     parser.add_argument("--save-json", type=str, default=None,
                         help="Where to write the result JSON.")
     args = parser.parse_args()
+
+    if args.device.startswith("cuda") and not torch.cuda.is_available():
+        print(f"[WARNING] --device {args.device} requested but CUDA is not available. Falling back to cpu.")
+        args.device = "cpu"
 
     random.seed(args.seed)
     np.random.seed(args.seed)
@@ -115,7 +122,7 @@ def main() -> None:
         "start_steps":       args.start_steps,
         "n_episodes":        args.n_episodes,
         "early_stop_reward": args.early_stop_reward,
-        "device":            "cpu",
+        "device":            args.device,
         "verbose":           True,
     }
 
@@ -123,7 +130,7 @@ def main() -> None:
     env.close()
 
     eval_env = gym.make(args.env_id)
-    mean_ret, std_ret = evaluate_csil_soar(eval_env, agent, n_episodes=args.n_eval_episodes)
+    mean_ret, std_ret = evaluate_csil_soar(eval_env, agent, n_episodes=args.n_eval_episodes, device=args.device)
     eval_env.close()
 
     print(f"\n[{args.env_id}] CSIL-SOAR  K={args.n_demos}  seed={args.seed}  "
@@ -158,6 +165,7 @@ if __name__ == "__main__":
 #   --expert-npz data/expert/CartPole-v1/expert_K15_seed0.npz `
 #   --n-demos 10 --seed 0 --n-episodes 1000 --early-stop-reward 495 `
 #   --n-critics 4 --sigma-clip 1.0 `
+#   --device cuda `
 #   --save-json results/raw/csil_soar/CartPole-v1/csil_soar_K10_seed0.json
 #
 # ── Full K × seed sweep (PowerShell) ──────────────────────────────────────────
