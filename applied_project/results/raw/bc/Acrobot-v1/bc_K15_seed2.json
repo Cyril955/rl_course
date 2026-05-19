@@ -1,0 +1,9 @@
+{
+  "env": "Acrobot-v1",
+  "method": "bc",
+  "K": 15,
+  "train_seed": 2,
+  "mean_return": -80.85,
+  "std_return": 20.8333266666656,
+  "n_episodes": 20
+}
