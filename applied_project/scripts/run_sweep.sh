@@ -164,12 +164,45 @@ for ENV in "${ENVS[@]}"; do
   done
 done
 
-# ── Step 6: Plot ──────────────────────────────────────────────────────────────
+# ── Step 6: BC baseline sweep (env × K × seed) ───────────────────────────────
 echo ""
 echo "============================================================"
-echo " STEP 6: Plotting Comparison Figure"
+echo " STEP 6: BC baseline sweep"
+echo "============================================================"
+
+for ENV in "${ENVS[@]}"; do
+  BC_SUBSAMPLE_FREQ=20
+  if [ "$ENV" = "Acrobot-v1" ]; then BC_SUBSAMPLE_FREQ=5; fi
+
+  for SEED in "${SEEDS[@]}"; do
+    EXPERT_NPZ="data/expert/${ENV}/expert_K${EXPERT_POOL_K}_seed${SEED}.npz"
+
+    for K in "${K_VALUES[@]}"; do
+      RESULT_JSON="results/raw/bc/${ENV}/bc_K${K}_seed${SEED}.json"
+
+      if [ -f "$RESULT_JSON" ]; then
+        echo "[SKIP] $RESULT_JSON"
+        continue
+      fi
+
+      echo "[RUN ] BC: $ENV  K=$K  seed=$SEED  subsample_freq=$BC_SUBSAMPLE_FREQ"
+      $PYTHON scripts/08_evaluate_bc.py \
+        --env-id "$ENV" \
+        --expert-npz "$EXPERT_NPZ" \
+        --n-demos "$K" \
+        --seed "$SEED" \
+        --subsample-freq "$BC_SUBSAMPLE_FREQ" \
+        --save-json "$RESULT_JSON"
+    done
+  done
+done
+
+# ── Step 7: Plot ──────────────────────────────────────────────────────────────
+echo ""
+echo "============================================================"
+echo " STEP 7: Plotting Comparison Figure"
 echo "============================================================"
 $PYTHON scripts/07_plot_comparison_figure.py
 
 echo ""
-echo "Done!  Figure saved to results/figures/comparison_figure.png"
+echo "Done!  Figures saved to results/figures/"

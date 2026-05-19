@@ -29,6 +29,7 @@ ENV_IDS = ["CartPole-v1", "Acrobot-v1"]
 BASELINES_DIR = Path("results/raw/baselines")
 IQ_LEARN_DIR  = Path("results/raw/iq_learn")
 CSIL_DIR      = Path("results/raw/csil")
+BC_DIR        = Path("results/raw/bc")
 FIGURES_DIR   = Path("results/figures")
 
 # Minimum possible episode return per env (used to clip lower std band)
@@ -41,12 +42,14 @@ ENV_RETURN_FLOOR = {
 COLOURS = {
     "iq_learn": "#9f0fbf",   # purple
     "csil":     "#0fa7d1",   # blue
+    "bc":       "#E8732A",   # orange
     "expert":   "#4CAF50",   # green (dashed)
     "random":   "#9E9E9E",   # grey (dashed)
 }
 LABELS = {
     "iq_learn": r"IQ-Learn ($\chi^2$)",
     "csil":     "CSIL",
+    "bc":       "BC",
     "expert":   "Expert (PPO)",
     "random":   "Random",
 }
@@ -95,6 +98,7 @@ def collect_baseline(env_id: str, method: str) -> tuple[float, float]:
 MARKERS = {
     "iq_learn": "^",   # triangle
     "csil":     "o",   # circle
+    "bc":       "s",   # square
 }
 
 
@@ -121,13 +125,14 @@ def plot_env(ax: plt.Axes, env_id: str) -> None:
 
     iq_results   = collect_results(IQ_LEARN_DIR, env_id, "iq_learn_K*_seed*.json")
     csil_results = collect_results(CSIL_DIR,     env_id, "csil_K*_seed*.json")
+    bc_results   = collect_results(BC_DIR,       env_id, "bc_K*_seed*.json")
 
-    if not iq_results and not csil_results:
+    if not iq_results and not csil_results and not bc_results:
         ax.set_title(f"{env_id}\n(no results yet)")
         return
 
     # Determine x range from whichever results exist
-    all_k = sorted(set(list(iq_results) + list(csil_results)))
+    all_k = sorted(set(list(iq_results) + list(csil_results) + list(bc_results)))
     x_range = [all_k[0], all_k[-1]]
 
     for method in ("expert", "random"):
@@ -143,6 +148,7 @@ def plot_env(ax: plt.Axes, env_id: str) -> None:
                             [mean + std] * 2,
                             alpha=0.15, color=COLOURS[method])
 
+    _draw_curve(ax, bc_results,   "bc",       floor)
     _draw_curve(ax, iq_results,   "iq_learn", floor)
     _draw_curve(ax, csil_results, "csil",     floor)
 
