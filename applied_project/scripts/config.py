@@ -31,7 +31,7 @@ FIGURES_DIR    = RESULTS_DIR / "figures"
 
 # ── Sweep grid ─────────────────────────────────────────────────────────────────
 K_VALUES        = [1, 3, 7, 10, 15]
-SEEDS           = [1] #[0, 1, 2, 3, 4]
+SEEDS           = [2] #[0, 1, 2, 3, 4]
 EVAL_SEEDS      = [10, 11, 12, 13, 14]
 EXPERT_POOL_K   = 15
 N_EVAL_EPISODES = 20 # Per seed
@@ -157,9 +157,11 @@ if __name__ == "__main__":
         print(f'N_CRITICS={CSIL_SOAR_CONFIG["n_critics"]}')
         print(f'DEVICE={DEVICE}')
 
-        # ── Associative array for env → shell prefix lookup ──────────────────
-        pairs = " ".join(f'["{env}"]="{pfx}"' for env, pfx in SHELL_PREFIX.items())
-        print(f'declare -A SHELL_PREFIXES=({pairs})')
+        # ── env_prefix function (bash 3.2 compatible, no associative arrays) ──
+        print('env_prefix() { case "$1" in')
+        for env, pfx in SHELL_PREFIX.items():
+            print(f'  "{env}") echo "{pfx}" ;;')
+        print('  *) echo "" ;; esac; }')
 
         # ── Per-environment variables ─────────────────────────────────────────
         for env_id, ecfg in ENV_CONFIG.items():

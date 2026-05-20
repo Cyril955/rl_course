@@ -13,7 +13,7 @@ cd "$(dirname "$0")/.."
 PYTHON="${PYTHON:-$(which python3)}"
 
 eval "$($PYTHON scripts/config.py --shell)"
-env_var() { local _v="${2}_${SHELL_PREFIXES[$1]}"; echo "${!_v}"; }
+env_var() { local _v="${2}_$(env_prefix "$1")"; echo "${!_v}"; }
 
 # ── Step 1: Train PPO experts ──────────────────────────────────────────────────
 echo "============================================================"

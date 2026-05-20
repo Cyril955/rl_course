@@ -2,15 +2,15 @@
   "env": "Acrobot-v1",
   "method": "bc",
   "K": 3,
-  "train_seed": 1,
-  "mean_return": -89.4,
-  "std_return": 3.70445677529108,
+  "train_seed": 2,
+  "mean_return": -85.23,
+  "std_return": 2.9776836635210233,
   "per_eval_seed_means": [
-    -87.25,
-    -85.2,
-    -87.2,
-    -95.25,
-    -92.1
+    -89.6,
+    -86.9,
+    -84.95,
+    -80.65,
+    -84.05
   ],
   "eval_seeds": [
     10,

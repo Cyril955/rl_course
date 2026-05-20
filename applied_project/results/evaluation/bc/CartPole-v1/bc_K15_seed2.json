@@ -1,8 +1,8 @@
 {
   "env": "CartPole-v1",
   "method": "bc",
-  "K": 10,
-  "train_seed": 1,
+  "K": 15,
+  "train_seed": 2,
   "mean_return": 500.0,
   "std_return": 0.0,
   "per_eval_seed_means": [
