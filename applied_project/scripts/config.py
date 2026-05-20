@@ -22,15 +22,19 @@ DATA_DIR    = Path("data")
 MODELS_DIR  = Path("models")
 RESULTS_DIR = Path("results")
 
-EXPERT_DATA_DIR   = DATA_DIR / "expert"
-IQ_LEARN_DATA_DIR = DATA_DIR / "iq_learn"
+EXPERT_DATA_DIR   = DATA_DIR / "expert_trajectories"
+IQ_LEARN_DATA_DIR = DATA_DIR / "iq_learn"          # auto-generated PKL cache
+
+EVALUATION_DIR = RESULTS_DIR / "evaluation"
+TRAINING_DIR   = RESULTS_DIR / "training"
+FIGURES_DIR    = RESULTS_DIR / "figures"
 
 # ── Sweep grid ─────────────────────────────────────────────────────────────────
 K_VALUES        = [1, 3, 7, 10, 15]
-SEEDS           = [0, 1, 2, 3, 4]
+SEEDS           = [1] #[0, 1, 2, 3, 4]
 EVAL_SEEDS      = [10, 11, 12, 13, 14]
 EXPERT_POOL_K   = 15
-N_EVAL_EPISODES = 20
+N_EVAL_EPISODES = 20 # Per seed
 
 # ── Shell variable prefix per environment (for run_sweep.sh) ──────────────────
 SHELL_PREFIX: dict[str, str] = {
@@ -53,11 +57,11 @@ ENV_CONFIG: dict[str, dict] = {
     },
     "Acrobot-v1": {
         "expert_timesteps":      300_000,
-        "early_stop_reward":     None,
-        "n_episodes_csil":       3_000,
-        "n_episodes_csil_soar":  3_000,
+        "early_stop_reward":     -85.00,
+        "n_episodes_csil":       1_500,
+        "n_episodes_csil_soar":  1_500,
         "learn_steps_iq":        200_000,
-        "subsample_freq_iq":     5,
+        "subsample_freq_iq":     20,
         "sigma_clip_csil_soar":  1.0,
     },
 }
@@ -65,7 +69,7 @@ ENV_CONFIG: dict[str, dict] = {
 # ── BC hyperparameters ─────────────────────────────────────────────────────────
 BC_CONFIG: dict = {
     "hidden_size": 64,
-    "epochs":      200,
+    "epochs":      600,
     "lr":          3e-4,
     "batch_size":  256,
 }

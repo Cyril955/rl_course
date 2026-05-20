@@ -1,10 +1,10 @@
-"""Train CSIL for one (env, K, seed) configuration and save the model.
+"""Train CSIL+SOAR for one (env, K, seed) configuration and save the model.
 
 Loads a pre-trained BC model from models/bc/ if available (run 05_train_bc.py first).
-Evaluation is handled separately by 10_evaluate_csil.py.
+Evaluation is handled separately by 11_evaluate_csil_soar.py.
 
-Models         → models/csil/{env}/
-Training curves → results/training/csil/{env}/
+Models         → models/csil_soar/{env}/
+Training curves → results/training/csil_soar/{env}/
 """
 import argparse
 import json
@@ -17,8 +17,9 @@ import gymnasium as gym
 import torch
 
 sys.path.insert(0, str(Path(__file__).parent))
-from csil_agent import BCPolicyDiscrete, run_csil
-from config import CSIL_CONFIG, ENV_CONFIG, subsample_trajectories
+from csil_agent import BCPolicyDiscrete
+from csil_soar_agent import run_csil_soar
+from config import CSIL_SOAR_CONFIG, ENV_CONFIG, subsample_trajectories
 
 
 def load_bc_policy(bc_model_path: Path, device: str) -> BCPolicyDiscrete | None:
@@ -32,10 +33,10 @@ def load_bc_policy(bc_model_path: Path, device: str) -> BCPolicyDiscrete | None:
 
 
 def main() -> None:
-    cfg = CSIL_CONFIG
+    cfg = CSIL_SOAR_CONFIG
 
     parser = argparse.ArgumentParser(
-        description="Train CSIL for one (env, K, seed) configuration."
+        description="Train CSIL+SOAR for one (env, K, seed) configuration."
     )
     parser.add_argument("--env-id",         type=str, required=True)
     parser.add_argument("--expert-npz",     type=str, required=True)
@@ -49,16 +50,18 @@ def main() -> None:
     parser.add_argument("--bc-epochs",     type=int,   default=cfg["bc_epochs"])
     parser.add_argument("--bc-lr",         type=float, default=cfg["bc_lr"])
     parser.add_argument("--bc-batch-size", type=int,   default=cfg["bc_batch_size"])
-    # SAC / CSIL
+    # SAC / CSIL-SOAR
     parser.add_argument("--n-episodes",        type=int,   default=cfg["n_episodes"])
     parser.add_argument("--start-steps",       type=int,   default=cfg["start_steps"])
     parser.add_argument("--alpha-csil",        type=float, default=cfg["alpha_csil"])
     parser.add_argument("--early-stop-reward", type=float, default=None)
+    parser.add_argument("--n-critics",  type=int,   default=cfg["n_critics"])
+    parser.add_argument("--sigma-clip", type=float, default=cfg["sigma_clip"])
     parser.add_argument("--device", type=str, default="cpu")
     parser.add_argument("--save-model", type=str, default=None,
-                        help="Defaults to models/csil/{env}/K{K}_seed{seed}.pt")
+                        help="Defaults to models/csil_soar/{env}/K{K}_seed{seed}.pt")
     parser.add_argument("--save-training", type=str, default=None,
-                        help="Defaults to results/training/csil/{env}/csil_K{K}_seed{seed}.json")
+                        help="Defaults to results/training/csil_soar/{env}/csil_soar_K{K}_seed{seed}.json")
     args = parser.parse_args()
 
     if args.device.startswith("cuda") and not torch.cuda.is_available():
@@ -78,21 +81,22 @@ def main() -> None:
 
     expert_states, expert_actions = subsample_trajectories(
         expert_npz, args.n_demos, args.seed, args.subsample_freq)
-    print(f"[CSIL] {args.env_id}  K={args.n_demos}  seed={args.seed}  "
-          f"subsample_freq={args.subsample_freq}  → {len(expert_states)} transitions")
+    print(f"[CSIL-SOAR] {args.env_id}  K={args.n_demos}  seed={args.seed}  "
+          f"subsample_freq={args.subsample_freq}  L={args.n_critics}  σ={args.sigma_clip}"
+          f"  → {len(expert_states)} transitions")
 
     # ── Load pre-trained BC if available ──────────────────────────────────────
     bc_model_path = Path(
         args.bc_model or f"models/bc/{args.env_id}/K{args.n_demos}_seed{args.seed}.pt")
     bc_policy = load_bc_policy(bc_model_path, args.device)
     if bc_policy is not None:
-        print(f"[CSIL] Loaded BC policy from {bc_model_path}")
+        print(f"[CSIL-SOAR] Loaded BC policy from {bc_model_path}")
     else:
-        print(f"[CSIL] BC model not found at {bc_model_path}, training BC from scratch.")
+        print(f"[CSIL-SOAR] BC model not found at {bc_model_path}, training BC from scratch.")
 
     env = gym.make(args.env_id)
 
-    csil_dict = {
+    csil_soar_dict = {
         "bc_hidden_size":    cfg["bc_hidden_size"],
         "bc_epochs":         args.bc_epochs,
         "bc_lr":             args.bc_lr,
@@ -102,6 +106,8 @@ def main() -> None:
         "gamma":             cfg["gamma"],
         "tau":               cfg["tau"],
         "alpha_csil":        args.alpha_csil,
+        "n_critics":         args.n_critics,
+        "sigma_clip":        args.sigma_clip,
         "buffer_size":       cfg["buffer_size"],
         "batch_size":        cfg["batch_size"],
         "start_steps":       args.start_steps,
@@ -111,38 +117,40 @@ def main() -> None:
         "verbose":           True,
     }
 
-    agent, scores, bc_policy = run_csil(
-        env, expert_states, expert_actions, csil_dict, bc_policy=bc_policy)
+    agent, scores, bc_policy = run_csil_soar(
+        env, expert_states, expert_actions, csil_soar_dict, bc_policy=bc_policy)
     env.close()
 
     # ── Save model ─────────────────────────────────────────────────────────────
     model_path = Path(
-        args.save_model or f"models/csil/{args.env_id}/K{args.n_demos}_seed{args.seed}.pt")
+        args.save_model or f"models/csil_soar/{args.env_id}/K{args.n_demos}_seed{args.seed}.pt")
     model_path.parent.mkdir(parents=True, exist_ok=True)
     torch.save({
-        "actor":     agent.actor.state_dict(),
-        "bc_policy": bc_policy.state_dict(),
-        "env_id":    args.env_id,
-        "K":         args.n_demos,
-        "seed":      args.seed,
-        "state_dim": env.observation_space.shape[0] if hasattr(env, "observation_space")
-                     else agent.actor.net[0].in_features,
+        "actor":      agent.actor.state_dict(),
+        "bc_policy":  bc_policy.state_dict(),
+        "env_id":     args.env_id,
+        "K":          args.n_demos,
+        "seed":       args.seed,
         "action_dim": agent.action_dim,
-        "config":    csil_dict,
+        "n_critics":  args.n_critics,
+        "sigma_clip": args.sigma_clip,
+        "config":     csil_soar_dict,
     }, model_path)
     print(f"  Model saved → {model_path}")
 
     # ── Save training curve ────────────────────────────────────────────────────
     training_path = Path(
         args.save_training
-        or f"results/training/csil/{args.env_id}/csil_K{args.n_demos}_seed{args.seed}.json")
+        or f"results/training/csil_soar/{args.env_id}/csil_soar_K{args.n_demos}_seed{args.seed}.json")
     training_path.parent.mkdir(parents=True, exist_ok=True)
     with open(training_path, "w") as f:
         json.dump({
             "env":             args.env_id,
-            "method":          "csil",
+            "method":          "csil_soar",
             "K":               args.n_demos,
             "train_seed":      args.seed,
+            "n_critics":       args.n_critics,
+            "sigma_clip":      args.sigma_clip,
             "episode_returns": scores,
             "n_episodes":      len(scores),
         }, f)
@@ -153,7 +161,7 @@ if __name__ == "__main__":
     main()
 
 # ── Example (PowerShell) ───────────────────────────────────────────────────────
-# python scripts/06_train_csil.py `
+# python scripts/07_train_csil_soar.py `
 #   --env-id CartPole-v1 `
 #   --expert-npz data/expert_trajectories/CartPole-v1/expert_K15_seed0.npz `
-#   --n-demos 10 --seed 0 --subsample-freq 20 --device cuda
+#   --n-demos 10 --seed 0 --subsample-freq 20 --n-critics 4 --device cuda

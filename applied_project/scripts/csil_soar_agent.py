@@ -377,10 +377,11 @@ def run_csil_soar(
     expert_states: np.ndarray,
     expert_actions: np.ndarray,
     csil_soar_dict: dict,
+    bc_policy: BCPolicyDiscrete | None = None,
 ) -> tuple[CSILSOARAgent, list[float], BCPolicyDiscrete]:
     """
     Full CSIL-SOAR pipeline:
-      1. Train BC on expert data
+      1. Use provided bc_policy, or train BC on expert data if none given
       2. Initialise SAC actor from BC weights
       3. Run SAC with coherent reward + optimistic ensemble critic (SOAR)
 
@@ -416,15 +417,19 @@ def run_csil_soar(
 
     # ── Phase 1: Behavioural Cloning ─────────────────────────────────────────
     print("=" * 60)
-    print("Phase 1 — Behavioural Cloning")
-    print("=" * 60)
-    bc_policy = BCPolicyDiscrete(state_dim, action_dim, bc_hidden_size).to(device)
-    bc_losses = train_bc(
-        bc_policy, expert_states, expert_actions,
-        n_epochs=bc_epochs, lr=bc_lr, batch_size=bc_batch_size,
-        device=device, verbose=verbose,
-    )
-    print(f"  BC training done. Final NLL: {bc_losses[-1]:.4f}")
+    if bc_policy is not None:
+        print("Phase 1 — BC policy provided (skipping training)")
+        bc_policy = bc_policy.to(device).eval()
+    else:
+        print("Phase 1 — Behavioural Cloning")
+        print("=" * 60)
+        bc_policy = BCPolicyDiscrete(state_dim, action_dim, bc_hidden_size).to(device)
+        bc_losses = train_bc(
+            bc_policy, expert_states, expert_actions,
+            n_epochs=bc_epochs, lr=bc_lr, batch_size=bc_batch_size,
+            device=device, verbose=verbose,
+        )
+        print(f"  BC training done. Final NLL: {bc_losses[-1]:.4f}")
 
     # ── Phase 2 & 3: CSIL-SOAR (SAC + Coherent Reward + Optimistic Ensemble) ─
     print("\n" + "=" * 60)
@@ -503,22 +508,23 @@ def evaluate_csil_soar(
     agent: CSILSOARAgent,
     n_episodes: int = 20,
     device: str = "cpu",
-    eval_seed: int | None = None,
+    eval_seeds: list[int] | None = None,
 ) -> tuple[float, float]:
     """Greedy evaluation (argmax policy). Returns (mean_return, std_return).
 
-    eval_seed: if given, each episode is reset with a deterministic seed derived
-               from it, ensuring evaluation is reproducible and independent of
-               training randomness.
+    eval_seeds: list of RNG seeds. For each seed, n_episodes episodes are run,
+                giving len(eval_seeds) * n_episodes total episodes.
     """
-    rng = np.random.default_rng(eval_seed) if eval_seed is not None else None
+    seeds = eval_seeds if eval_seeds is not None else [None]
     returns = []
-    for _ in range(n_episodes):
-        seed_i = int(rng.integers(1 << 31)) if rng is not None else None
-        try:
-            state, _ = env.reset(seed=seed_i)
-        except TypeError:
-            state = env.reset()
+    for seed in seeds:
+        rng = np.random.default_rng(seed) if seed is not None else None
+        for _ in range(n_episodes):
+            seed_i = int(rng.integers(1 << 31)) if rng is not None else None
+            try:
+                state, _ = env.reset(seed=seed_i)
+            except TypeError:
+                state = env.reset()
 
         done  = False
         ep_r  = 0.0

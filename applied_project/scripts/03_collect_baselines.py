@@ -46,7 +46,7 @@ ENV_IDS = ["CartPole-v1", "Acrobot-v1"]
 SEEDS = [0, 1, 2, 3, 4]
 N_EPISODES = 20
 EXPERT_MODEL_DIR = Path("models/experts")
-RESULTS_DIR = Path("results/raw/baselines")
+RESULTS_DIR = Path("results/evaluation/baselines")
 
 
 def evaluate_random(env_id: str, n_episodes: int, seed: int = 0) -> tuple[float, float]:

@@ -1,9 +1,0 @@
-{
-  "env": "CartPole-v1",
-  "method": "bc",
-  "K": 7,
-  "train_seed": 2,
-  "mean_return": 147.9,
-  "std_return": 93.359466579453,
-  "n_episodes": 20
-}
