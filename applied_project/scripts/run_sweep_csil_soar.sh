@@ -17,6 +17,7 @@ echo "============================================================"
 for ENV in "${ENVS[@]}"; do
   N_EPISODES=$(env_var "$ENV" N_EPISODES_CSIL_SOAR)
   SUBSAMPLE_FREQ=$(env_var "$ENV" SUBSAMPLE_FREQ)
+
   SIGMA_CLIP=$(env_var "$ENV" SIGMA_CLIP)
   EARLY_STOP=$(env_var "$ENV" EARLY_STOP)
   EXTRA_ARGS=()

@@ -18,7 +18,7 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).parent))
 from csil_agent import BCPolicyDiscrete, run_csil
-from config import CSIL_CONFIG, ENV_CONFIG, subsample_trajectories
+from config import BC_CONFIG, CSIL_CONFIG, ENV_CONFIG, subsample_trajectories
 
 
 def load_bc_policy(bc_model_path: Path, device: str) -> BCPolicyDiscrete | None:
@@ -46,7 +46,9 @@ def main() -> None:
                         help="Path to pre-trained BC model. "
                              "Defaults to models/bc/{env}/K{K}_seed{seed}.pt")
     # BC (used only if BC model not found)
-    parser.add_argument("--bc-epochs",     type=int,   default=cfg["bc_epochs"])
+    parser.add_argument("--bc-epochs",     type=int,   default=None,
+                        help="BC training epochs (fallback if no BC model found). "
+                             "Defaults to ENV_CONFIG[env]['bc_epochs'] if not specified.")
     parser.add_argument("--bc-lr",         type=float, default=cfg["bc_lr"])
     parser.add_argument("--bc-batch-size", type=int,   default=cfg["bc_batch_size"])
     # SAC / CSIL
@@ -65,6 +67,8 @@ def main() -> None:
         print(f"[WARNING] CUDA not available, falling back to cpu.")
         args.device = "cpu"
 
+    if args.bc_epochs is None:
+        args.bc_epochs = ENV_CONFIG.get(args.env_id, {}).get("bc_epochs", BC_CONFIG["epochs"])
     if args.early_stop_reward is None:
         args.early_stop_reward = ENV_CONFIG.get(args.env_id, {}).get("early_stop_reward", None)
 

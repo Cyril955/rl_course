@@ -17,6 +17,7 @@ echo "============================================================"
 for ENV in "${ENVS[@]}"; do
   N_EPISODES=$(env_var "$ENV" N_EPISODES_CSIL)
   SUBSAMPLE_FREQ=$(env_var "$ENV" SUBSAMPLE_FREQ)
+
   EARLY_STOP=$(env_var "$ENV" EARLY_STOP)
   EXTRA_ARGS=()
   if [ -n "$EARLY_STOP" ]; then EXTRA_ARGS+=("--early-stop-reward" "$EARLY_STOP"); fi
