@@ -3,7 +3,7 @@
   "method": "csil",
   "K": 15,
   "train_seed": 2,
-  "mean_return": 500.0,
-  "std_return": 0.0,
+  "mean_return": 481.2,
+  "std_return": 46.791665924606704,
   "n_episodes": 20
 }

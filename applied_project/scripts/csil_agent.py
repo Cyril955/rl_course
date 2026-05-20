@@ -463,12 +463,20 @@ def evaluate_csil(
     agent: CSILAgent,
     n_episodes: int = 20,
     device: str = "cpu",
+    eval_seed: int | None = None,
 ) -> tuple[float, float]:
-    """Evaluate with greedy (argmax) policy. Returns (mean_return, std_return)."""
+    """Evaluate with greedy (argmax) policy. Returns (mean_return, std_return).
+
+    eval_seed: if given, each episode is reset with a deterministic seed derived
+               from it (same approach as IQ-Learn's evaluator), ensuring the
+               evaluation is reproducible and independent of training randomness.
+    """
+    rng = np.random.default_rng(eval_seed) if eval_seed is not None else None
     returns = []
     for _ in range(n_episodes):
+        seed_i = int(rng.integers(1 << 31)) if rng is not None else None
         try:
-            state, _ = env.reset()
+            state, _ = env.reset(seed=seed_i)
         except TypeError:
             state = env.reset()
 

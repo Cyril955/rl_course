@@ -20,12 +20,20 @@ from csil_agent import BCPolicyDiscrete, train_bc
 
 
 @torch.no_grad()
-def evaluate_bc(env, policy: BCPolicyDiscrete, n_episodes: int = 20, device: str = "cpu") -> tuple[float, float]:
+def evaluate_bc(
+    env,
+    policy: BCPolicyDiscrete,
+    n_episodes: int = 20,
+    device: str = "cpu",
+    eval_seed: int | None = None,
+) -> tuple[float, float]:
     """Greedy (argmax) evaluation of BC policy."""
+    rng = np.random.default_rng(eval_seed) if eval_seed is not None else None
     returns = []
     for _ in range(n_episodes):
+        seed_i = int(rng.integers(1 << 31)) if rng is not None else None
         try:
-            state, _ = env.reset()
+            state, _ = env.reset(seed=seed_i)
         except TypeError:
             state = env.reset()
         done = False
@@ -76,8 +84,10 @@ def main() -> None:
     parser.add_argument("--bc-epochs",   type=int, default=200)
     parser.add_argument("--bc-lr",       type=float, default=3e-4)
     parser.add_argument("--bc-batch-size", type=int, default=256)
-    parser.add_argument("--subsample-freq", type=int, default=1)
+    parser.add_argument("--subsample-freq",  type=int, default=1)
     parser.add_argument("--n-eval-episodes", type=int, default=20)
+    parser.add_argument("--eval-seed",       type=int, default=None,
+                        help="Seed for evaluation episodes.")
     parser.add_argument("--save-json",   type=str, default=None)
     args = parser.parse_args()
 
@@ -102,7 +112,8 @@ def main() -> None:
     env.close()
 
     eval_env = gym.make(args.env_id)
-    mean_ret, std_ret = evaluate_bc(eval_env, policy, n_episodes=args.n_eval_episodes)
+    mean_ret, std_ret = evaluate_bc(eval_env, policy, n_episodes=args.n_eval_episodes,
+                                     eval_seed=args.eval_seed)
     eval_env.close()
 
     print(f"  Mean return: {mean_ret:.2f} ± {std_ret:.2f}  (n={args.n_eval_episodes})")

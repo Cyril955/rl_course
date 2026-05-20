@@ -503,12 +503,20 @@ def evaluate_csil_soar(
     agent: CSILSOARAgent,
     n_episodes: int = 20,
     device: str = "cpu",
+    eval_seed: int | None = None,
 ) -> tuple[float, float]:
-    """Greedy evaluation (argmax policy). Returns (mean_return, std_return)."""
+    """Greedy evaluation (argmax policy). Returns (mean_return, std_return).
+
+    eval_seed: if given, each episode is reset with a deterministic seed derived
+               from it, ensuring evaluation is reproducible and independent of
+               training randomness.
+    """
+    rng = np.random.default_rng(eval_seed) if eval_seed is not None else None
     returns = []
     for _ in range(n_episodes):
+        seed_i = int(rng.integers(1 << 31)) if rng is not None else None
         try:
-            state, _ = env.reset()
+            state, _ = env.reset(seed=seed_i)
         except TypeError:
             state = env.reset()
 
