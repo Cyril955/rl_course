@@ -334,7 +334,7 @@ class CSILSOARAgent:
         probs, log_probs = self.actor(states)
         with torch.no_grad():
             bc_log_probs = self.bc_policy.log_probs(states)
-        q_opt = self.ensemble.optimistic_q(states, self.sigma_clip)
+        q_opt = self.ensemble.optimistic_q(states, self.sigma_clip).detach()
         kl_from_bc = log_probs - bc_log_probs
         actor_loss  = (probs * (alpha_sac * kl_from_bc - q_opt)).sum(-1).mean()
 
@@ -343,10 +343,9 @@ class CSILSOARAgent:
         self.actor_opt.step()
 
         # ── Temperature update (target KL vs. BC, same as CSIL) ──────────────
-        with torch.no_grad():
-            probs_det, log_probs_det = self.actor(states)
-            bc_log_probs_det = self.bc_policy.log_probs(states)
-        kl_det    = (probs_det * (log_probs_det - bc_log_probs_det)).sum(-1).mean()
+        # Reuse probs/log_probs from the actor step (detached) — bc_log_probs
+        # was already computed under no_grad above.
+        kl_det = (probs.detach() * (log_probs.detach() - bc_log_probs)).sum(-1).mean()
         alpha_loss = self.log_alpha_sac * (self.target_kl - kl_det).detach()
 
         self.alpha_sac_opt.zero_grad()
