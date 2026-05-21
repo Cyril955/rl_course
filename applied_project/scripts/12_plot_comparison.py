@@ -144,14 +144,14 @@ def plot_env(ax: plt.Axes, env_id: str) -> None:
     for method in ("bc", "iq_learn", "csil", "csil_soar"):
         _draw_curve(ax, method_results[method], method, shade_lower, shade_upper)
 
-    ax.set_title(env_id, fontsize=12)
-    ax.set_xlabel("Number of Expert Trajectories (K)", fontsize=10)
-    ax.set_ylabel("Evaluation Return", fontsize=10)
+    ax.set_title(env_id.replace("-v1", "").replace("CartPole", "Cartpole"), fontsize=12, fontweight="bold")
+    ax.set_xlabel("Number of Expert Trajectories", fontsize=10)
+    ax.set_ylabel("Reward", fontsize=10)
     ax.legend(fontsize=8, loc="center right")
     ax.grid(True, alpha=0.3)
 
 
-def save_figure(envs: list[str], out_path: Path, show_title: bool, dpi: int = 300) -> None:
+def save_figure(envs: list[str], out_path: Path, show_title: bool, dpi: int = 600) -> None:
     n = len(envs)
     fig, axes = plt.subplots(1, n, figsize=(5 * n, 4))
     if n == 1:

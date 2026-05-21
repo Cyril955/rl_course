@@ -105,18 +105,18 @@ def load_baseline(name, env):
 # ── Build figure ──────────────────────────────────────────────────────────────
 
 fig, axes = plt.subplots(
-    len(ENVS), len(K_VALUES),
-    figsize=(5 * len(K_VALUES), 4 * len(ENVS)),
-    sharey="row",
+    len(K_VALUES), len(ENVS),
+    figsize=(5 * len(ENVS), 4 * len(K_VALUES)),
+    sharey="col",
 )
 
 handles_global = {}   # method → first artist encountered, for shared legend
 
-for row, env in enumerate(ENVS):
+for col, env in enumerate(ENVS):
     expert_val = load_baseline("expert", env)
     random_val = load_baseline("random", env)
 
-    for col, K in enumerate(K_VALUES):
+    for row, K in enumerate(K_VALUES):
         ax = axes[row, col]
 
         # training curves
@@ -141,36 +141,34 @@ for row, env in enumerate(ENVS):
                               linestyle=LINESTYLES[name])
             handles_global.setdefault(name, line)
 
-        ax.set_title(f"{env} — K = {K}", fontsize=11)
+        title = env.replace("-v1", "").replace("CartPole", "Cartpole")
+        ax.set_title(f"{title} - K = {K}", fontsize=12, fontweight="bold")
         ax.set_xlim(0, 1)
         ax.grid(True, alpha=0.3)
 
-        if row == len(ENVS) - 1:
-            ax.set_xlabel("Normalised training progress", fontsize=10)
+        if row == len(K_VALUES) - 1:
+            ax.set_xlabel("Training Progress", fontsize=10)
         if col == 0:
-            ax.set_ylabel("Episode return", fontsize=10)
+            ax.set_ylabel("Reward", fontsize=10)
 
-# ── Shared legend (bottom, full width) ───────────────────────────────────────
+# ── Legend in lower-right subplot ────────────────────────────────────────────
 order       = ["iq_learn", "csil", "csil_soar", "bc", "expert", "random"]
 leg_handles = [handles_global[m] for m in order if m in handles_global]
 leg_labels  = [LABELS[m]         for m in order if m in handles_global]
 
-fig.legend(
+axes[len(K_VALUES) - 1, len(ENVS) - 1].legend(
     leg_handles, leg_labels,
-    loc="lower center",
-    ncol=len(leg_handles),
-    fontsize=9,
+    loc="center right",
+    fontsize=8,
     frameon=True,
     framealpha=0.9,
-    bbox_to_anchor=(0.5, 0.0),
 )
 
 # ── Save ─────────────────────────────────────────────────────────────────────
-plt.tight_layout(rect=[0, 0.06, 1, 1])   # leave room for the bottom legend
+plt.tight_layout()
 
 out_dir  = os.path.join(RESULTS_DIR, "figures")
 os.makedirs(out_dir, exist_ok=True)
-out_path = os.path.join(out_dir, "training_curves_combined.pdf")
-plt.savefig(out_path, dpi=300, bbox_inches="tight")
+out_path = os.path.join(out_dir, "training_curves_combined.png")
+plt.savefig(out_path, dpi=600, bbox_inches="tight")
 print(f"Saved: {out_path}")
-plt.show()
