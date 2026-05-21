@@ -31,7 +31,7 @@ FIGURES_DIR    = RESULTS_DIR / "figures"
 
 # ── Sweep grid ─────────────────────────────────────────────────────────────────
 K_VALUES        = [1, 3, 7, 10, 15]
-SEEDS           = [2] #[0, 1, 2, 3, 4]
+SEEDS           = [0, 1, 2, 3, 4]
 EVAL_SEEDS      = [10, 11, 12, 13, 14]
 EXPERT_POOL_K   = 15
 N_EVAL_EPISODES = 20 # Per seed

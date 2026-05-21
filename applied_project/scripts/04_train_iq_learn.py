@@ -159,6 +159,44 @@ def run_iq_learn_training(
     )
 
 
+def copy_training_curve(
+    iq_repo_dir: Path,
+    env_id: str,
+    n_demos: int,
+    seed: int,
+    output_path: Path,
+) -> bool:
+    """Find training_curve.json from the most recent Hydra run and save it."""
+    import json
+    iq_workdir = iq_repo_dir / "iq_learn"
+    outputs_root = iq_workdir / "outputs"
+    candidates: list[Path] = []
+    if outputs_root.exists():
+        run_dirs = sorted(outputs_root.glob("*/*"), key=lambda p: p.stat().st_mtime, reverse=True)
+        for run_dir in run_dirs:
+            candidates.append(run_dir / "training_curve.json")
+
+    for src in candidates:
+        if src.exists():
+            raw = json.loads(src.read_text())
+            out = {
+                "env":             env_id,
+                "method":          "iq_learn",
+                "K":               n_demos,
+                "train_seed":      seed,
+                "episode_returns": raw.get("episode_returns", []),
+                "eval_history":    raw.get("eval_history", []),
+                "n_episodes":      len(raw.get("episode_returns", [])),
+            }
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(json.dumps(out))
+            print(f"[OK] Training curve saved → {output_path}")
+            return True
+
+    print("[WARNING] training_curve.json not found in Hydra output dirs.")
+    return False
+
+
 def copy_trained_model(
     iq_repo_dir: Path,
     env_id: str,
@@ -268,6 +306,12 @@ def main() -> None:
         or f"models/iq_learn/{args.env_id}/K{args.n_demos}_seed{args.seed}.pt"
     )
     copy_trained_model(iq_repo_dir, args.env_id, output_model)
+
+    training_json = Path(
+        f"results/training/iq_learn/{args.env_id}/"
+        f"iq_learn_K{args.n_demos}_seed{args.seed}.json"
+    )
+    copy_training_curve(iq_repo_dir, args.env_id, args.n_demos, args.seed, training_json)
 
 
 if __name__ == "__main__":
