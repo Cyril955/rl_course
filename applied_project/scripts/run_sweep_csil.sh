@@ -8,6 +8,7 @@ cd "$(dirname "$0")/.."
 PYTHON="${PYTHON:-$(which python3)}"
 
 eval "$($PYTHON scripts/config.py --shell)"
+ENVS=("Acrobot-v1") # FIXME: just for me to run acrobot only
 env_var() { local _v="${2}_$(env_prefix "$1")"; echo "${!_v}"; }
 
 echo "============================================================"

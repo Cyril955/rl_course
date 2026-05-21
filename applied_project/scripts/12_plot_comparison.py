@@ -147,7 +147,7 @@ def plot_env(ax: plt.Axes, env_id: str) -> None:
     ax.set_title(env_id, fontsize=12)
     ax.set_xlabel("Number of Expert Trajectories (K)", fontsize=10)
     ax.set_ylabel("Evaluation Return", fontsize=10)
-    ax.legend(fontsize=8, loc="lower right")
+    ax.legend(fontsize=8, loc="center right")
     ax.grid(True, alpha=0.3)
 
 
