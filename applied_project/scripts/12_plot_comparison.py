@@ -91,6 +91,9 @@ def _draw_curve(ax, k_results: dict, method: str, lower: float, upper: float) ->
     k_sorted = sorted(k_results)
     means = [float(np.mean(k_results[k])) for k in k_sorted]
     stds  = [float(np.std(k_results[k])) / np.sqrt(N_SEEDS) for k in k_sorted]
+    print(f"  [{LABELS[method]}]")
+    for k, m, s in zip(k_sorted, means, stds):
+        print(f"    K={k:3d}  mean={m:8.3f}  se={s:.3f}")
     ax.plot(k_sorted, means, f"{MARKERS[method]}-",
             color=COLOURS[method], label=LABELS[method], linewidth=1.5, markersize=6)
     ax.fill_between(
@@ -137,6 +140,7 @@ def plot_env(ax: plt.Axes, env_id: str) -> None:
                             [mean + se] * 2,
                             alpha=0.10, color=COLOURS[baseline])
 
+    print(f"\n=== {env_id} ===")
     for method in ("bc", "iq_learn", "csil", "csil_soar"):
         _draw_curve(ax, method_results[method], method, shade_lower, shade_upper)
 
@@ -164,9 +168,7 @@ def save_figure(envs: list[str], out_path: Path, show_title: bool, dpi: int = 30
 
 
 FIGURES = [
-    (ENV_IDS,          FIGURES_DIR / "comparison_all.png",       True),
-    (["CartPole-v1"],  FIGURES_DIR / "comparison_cartpole.png",  False),
-    (["Acrobot-v1"],   FIGURES_DIR / "comparison_acrobot.png",   False),
+    (ENV_IDS, FIGURES_DIR / "comparison_all.png", True),
 ]
 
 
