@@ -82,7 +82,7 @@ def collect_baseline(env_id: str, method: str) -> tuple[float | None, float | No
     raise ValueError(method)
 
 
-def _draw_curve(ax, k_results: dict, method: str, floor: float) -> None:
+def _draw_curve(ax, k_results: dict, method: str, lower: float, upper: float) -> None:
     if not k_results:
         return
     k_sorted = sorted(k_results)
@@ -92,9 +92,9 @@ def _draw_curve(ax, k_results: dict, method: str, floor: float) -> None:
             color=COLOURS[method], label=LABELS[method], linewidth=1.5, markersize=6)
     ax.fill_between(
         k_sorted,
-        [max(floor, m - s) for m, s in zip(means, stds)],
-        [m + s for m, s in zip(means, stds)],
-        alpha=0.2, color=COLOURS[method], linewidth=0.0,
+        [max(lower, m - s) for m, s in zip(means, stds)],
+        [min(upper, m + s) for m, s in zip(means, stds)],
+        alpha=0.1, color=COLOURS[method], linewidth=0.0,
     )
 
 
@@ -115,6 +115,11 @@ def plot_env(ax: plt.Axes, env_id: str) -> None:
     all_k   = sorted({k for r in method_results.values() for k in r})
     x_range = [all_k[0], all_k[-1]] if all_k else [0, 1]
 
+    random_mean, _ = collect_baseline(env_id, "random")
+    expert_mean, _ = collect_baseline(env_id, "expert")
+    shade_lower = random_mean if random_mean is not None else floor
+    shade_upper = expert_mean if expert_mean is not None else np.inf
+
     for baseline in ("expert", "random"):
         mean, std = collect_baseline(env_id, baseline)
         if mean is None:
@@ -126,10 +131,10 @@ def plot_env(ax: plt.Axes, env_id: str) -> None:
             ax.fill_between(x_range,
                             [max(floor, mean - std)] * 2,
                             [mean + std] * 2,
-                            alpha=0.15, color=COLOURS[baseline])
+                            alpha=0.10, color=COLOURS[baseline])
 
     for method in ("bc", "iq_learn", "csil", "csil_soar"):
-        _draw_curve(ax, method_results[method], method, floor)
+        _draw_curve(ax, method_results[method], method, shade_lower, shade_upper)
 
     ax.set_title(env_id, fontsize=12)
     ax.set_xlabel("Number of Expert Trajectories (K)", fontsize=10)
