@@ -5,11 +5,12 @@ Viel, Viano & Cevher — IL-SOAR (arXiv:2502.19859, 2025)
 SOAR wraps CSIL by replacing the standard twin-critic with an ensemble of L critics.
 The policy update uses an optimistic Q estimate (Algorithm 5 — OptimisticQ-NN):
 
-    Q_opt(s, a) = mean_ℓ Q_ℓ(s, a) − clip(std_ℓ Q_ℓ(s, a), 0, σ)
+    Q_opt(s, a) = mean_ℓ Q_ℓ(s, a) + clip(std_ℓ Q_ℓ(s, a), 0, σ)
 
-This is the "Mean-Std" aggregation rule (Algorithm 4 of the paper), which
-underestimates cost (= overestimates reward in the standard RL sense) for
-state-action pairs the ensemble disagrees about — driving optimistic exploration.
+This is the "Mean-Std" aggregation rule of Algorithm 4, converted from the paper's
+cost-form (mean − clip(std)) to the reward-form used here. Adding the clipped std
+overestimates reward (= underestimates cost) for state-action pairs the ensemble
+disagrees about, which drives optimistic exploration toward uncertain regions.
 
 All BC and coherent-reward components are identical to vanilla CSIL.
 """
@@ -191,19 +192,21 @@ class SOARCriticEnsemble(nn.Module):
 
     def optimistic_q(self, state: torch.Tensor, sigma_clip: float) -> torch.Tensor:
         """
-        OptimisticQ-NN (Algorithm 5): Q_opt = mean − clip(std, 0, σ).
+        OptimisticQ-NN (Algorithm 5) in reward form: Q_opt = mean + clip(std, 0, σ).
         Returns shape (batch, action_dim).
 
-        Subtracting the clipped std makes the estimate pessimistic about
-        uncertain (rarely visited) state-action pairs; in the cost picture
-        this is *optimistic* (assumes low cost), driving exploration.
+        The SOAR paper writes the rule in cost form (mean − clip(std)); converting
+        to reward form (Q = expected discounted return, higher is better) flips the
+        sign so the bonus is *added*. Inflating the Q-estimate where the ensemble
+        disagrees makes those actions look more attractive to the policy, driving
+        exploration toward uncertain state-action pairs.
         """
         q_all  = self.forward(state)            # (L, B, A)
         q_mean = q_all.mean(dim=0)              # (B, A)
         # unbiased=False matches the paper's 1/L formula
         q_std  = q_all.std(dim=0, unbiased=False)
         q_std_clipped = q_std.clamp(0.0, sigma_clip)
-        return q_mean - q_std_clipped           # (B, A)
+        return q_mean + q_std_clipped           # (B, A)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -472,8 +475,12 @@ def run_csil_soar(
                 done = terminated or truncated
             except ValueError:
                 next_state, reward, done, _ = env.step(action)
+                terminated = done  # legacy gym API: no truncation signal available
 
-            replay_buffer.push(state, action, next_state, done)
+            # Store `terminated` (true env termination), not `done` — bootstrapping
+            # must continue past time-limit truncation, otherwise long episodes
+            # (e.g. CartPole hitting the 500-step cap) are systematically undervalued.
+            replay_buffer.push(state, action, next_state, terminated)
             state = next_state
             ep_return += reward
             total_steps += 1

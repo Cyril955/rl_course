@@ -29,8 +29,8 @@ TRAINING_DIR   = RESULTS_DIR / "training"
 FIGURES_DIR    = RESULTS_DIR / "figures"
 
 # ── Sweep grid ─────────────────────────────────────────────────────────────────
-K_VALUES        = [3] # [1, 3, 7, 10, 15]
-SEEDS           = [0] # [0, 1, 2, 3, 4]
+K_VALUES        = [1, 3, 7, 10, 15]
+SEEDS           = [0, 1, 2, 3, 4]
 EVAL_SEEDS      = [10, 11, 12, 13, 14]
 EXPERT_POOL_K   = 15
 N_EVAL_EPISODES = 20 # Per seed
@@ -53,17 +53,17 @@ ENV_CONFIG: dict[str, dict] = {
         "n_episodes_csil_soar":  1_500,
         "learn_steps_iq":        100_000,
         "subsample_freq_iq":     20,
-        "sigma_clip_csil_soar":  1.0,
+        "sigma_clip_csil_soar":  10,
     },
     "Acrobot-v1": {
         "expert_timesteps":      300_000,
         "early_stop_reward":     -85.00,
         "bc_epochs":             600,
         "n_episodes_csil":       1_500,
-        "n_episodes_csil_soar":  1_000,
+        "n_episodes_csil_soar":  1_500,
         "learn_steps_iq":        200_000,
         "subsample_freq_iq":     20,
-        "sigma_clip_csil_soar":  1.0,
+        "sigma_clip_csil_soar":  10,
     },
 }
 

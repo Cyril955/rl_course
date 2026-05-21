@@ -433,8 +433,12 @@ def run_csil(
                 done = terminated or truncated
             except ValueError:
                 next_state, reward, done, _ = env.step(action)
+                terminated = done  # legacy gym API: no truncation signal available
 
-            replay_buffer.push(state, action, next_state, done)
+            # Store `terminated` (true env termination), not `done` — bootstrapping
+            # must continue past time-limit truncation, otherwise long episodes
+            # (e.g. CartPole hitting the 500-step cap) are systematically undervalued.
+            replay_buffer.push(state, action, next_state, terminated)
             state = next_state
             ep_return += reward
             total_steps += 1
