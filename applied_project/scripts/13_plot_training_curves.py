@@ -29,6 +29,7 @@ ENV = args.env
 K_VALUES  = [1, 3, 7, 10, 15]
 N_INTERP  = 300
 SMOOTH_W  = 15
+N_SEEDS   = 5   # number of training seeds; std is divided by sqrt(N_SEEDS)
 
 COLOURS = {
     "iq_learn":  "#9f0fbf",
@@ -131,7 +132,8 @@ for (row, col), K in zip(SUBPLOT_POS, K_VALUES):
         color = COLOURS[method]
         line, = ax.plot(x, mean, color=color, lw=1.5,
                         linestyle=LINESTYLES[method])
-        ax.fill_between(x, mean - std, mean + std, color=color, alpha=0.2)
+        se = std / np.sqrt(N_SEEDS)
+        ax.fill_between(x, mean - se, mean + se, color=color, alpha=0.2)
         handles_added.setdefault(method, line)
 
     # flat reference lines
