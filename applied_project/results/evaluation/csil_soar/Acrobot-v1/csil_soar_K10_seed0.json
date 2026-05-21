@@ -1,0 +1,25 @@
+{
+  "env": "Acrobot-v1",
+  "method": "csil_soar",
+  "K": 10,
+  "train_seed": 0,
+  "n_critics": 4,
+  "sigma_clip": 1.0,
+  "mean_return": -83.94000000000001,
+  "std_return": 1.6551132891738871,
+  "per_eval_seed_means": [
+    -84.6,
+    -86.75,
+    -83.4,
+    -81.85,
+    -83.1
+  ],
+  "eval_seeds": [
+    10,
+    11,
+    12,
+    13,
+    14
+  ],
+  "n_episodes_per_seed": 20
+}
