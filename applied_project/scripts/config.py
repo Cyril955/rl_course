@@ -11,11 +11,10 @@ from pathlib import Path
 
 import numpy as np
 
-try:
-    import torch as _torch
-    DEVICE = "cuda" if _torch.cuda.is_available() else "cpu"
-except ImportError:
-    DEVICE = "cpu"
+# CartPole and Acrobot use tiny MLPs (64-64) with one update per env step.
+# PCIe transfer overhead (~50-100µs per step) dominates GPU compute savings,
+# making CPU faster than CUDA for these environments.
+DEVICE = "cpu"
 
 # ── Directory layout ───────────────────────────────────────────────────────────
 DATA_DIR    = Path("data")
@@ -49,6 +48,7 @@ ENV_CONFIG: dict[str, dict] = {
     "CartPole-v1": {
         "expert_timesteps":      100_000,
         "early_stop_reward":     495.0,
+        "bc_epochs":             600,
         "n_episodes_csil":       1_500,
         "n_episodes_csil_soar":  1_500,
         "learn_steps_iq":        100_000,
@@ -58,6 +58,7 @@ ENV_CONFIG: dict[str, dict] = {
     "Acrobot-v1": {
         "expert_timesteps":      300_000,
         "early_stop_reward":     -85.00,
+        "bc_epochs":             600,
         "n_episodes_csil":       1_500,
         "n_episodes_csil_soar":  1_500,
         "learn_steps_iq":        200_000,
@@ -67,17 +68,21 @@ ENV_CONFIG: dict[str, dict] = {
 }
 
 # ── BC hyperparameters ─────────────────────────────────────────────────────────
+# bc_epochs is NOT set here — it lives in ENV_CONFIG per environment (600 for
+# CartPole, 300 for Acrobot). The "epochs" key below is a last-resort fallback
+# for unknown environments only; training scripts always prefer ENV_CONFIG.
 BC_CONFIG: dict = {
     "hidden_size": 64,
-    "epochs":      600,
+    "epochs":      500,   # fallback only
     "lr":          3e-4,
     "batch_size":  256,
 }
 
 # ── CSIL hyperparameters ───────────────────────────────────────────────────────
+# bc_epochs is omitted here for the same reason: CSIL resolves it from ENV_CONFIG
+# at runtime (used only when no pre-trained BC model is found).
 CSIL_CONFIG: dict = {
     "bc_hidden_size":  BC_CONFIG["hidden_size"],
-    "bc_epochs":       BC_CONFIG["epochs"],
     "bc_lr":           BC_CONFIG["lr"],
     "bc_batch_size":   BC_CONFIG["batch_size"],
     "sac_hidden_size": 64,
@@ -106,8 +111,9 @@ def subsample_trajectories(
     seed: int,
     subsample_freq: int = 1,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Select n_demos trajectories from an expert NPZ pool.
+    """Select n_demos trajectories randomly from an expert NPZ pool.
 
+    seed: controls which K trajectories are selected (same seed → same selection).
     subsample_freq: keep every Nth transition within each trajectory
                     (temporal decimation, same as IQ-Learn's expert.subsample_freq).
     Returns flat (states, actions) arrays ready for BC / CSIL training.

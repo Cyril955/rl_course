@@ -15,6 +15,7 @@ echo "============================================================"
 
 for ENV in "${ENVS[@]}"; do
   SUBSAMPLE_FREQ=$(env_var "$ENV" SUBSAMPLE_FREQ)
+
   for SEED in "${SEEDS[@]}"; do
     EXPERT_NPZ="data/expert_trajectories/${ENV}/expert_K${EXPERT_POOL_K}_seed${SEED}.npz"
     for K in "${K_VALUES[@]}"; do

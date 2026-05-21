@@ -17,7 +17,7 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).parent))
 from csil_agent import BCPolicyDiscrete, train_bc
-from config import BC_CONFIG, subsample_trajectories
+from config import BC_CONFIG, ENV_CONFIG, subsample_trajectories
 
 
 def main() -> None:
@@ -31,7 +31,9 @@ def main() -> None:
     parser.add_argument("--n-demos",        type=int, required=True)
     parser.add_argument("--seed",           type=int, default=0)
     parser.add_argument("--subsample-freq", type=int, default=1)
-    parser.add_argument("--bc-epochs",      type=int,   default=cfg["epochs"])
+    parser.add_argument("--bc-epochs",      type=int,   default=None,
+                        help="Number of BC training epochs. Defaults to ENV_CONFIG[env]['bc_epochs'] "
+                             "if not specified (600 for CartPole, 300 for Acrobot).")
     parser.add_argument("--bc-lr",          type=float, default=cfg["lr"])
     parser.add_argument("--bc-batch-size",  type=int,   default=cfg["batch_size"])
     parser.add_argument("--bc-hidden-size", type=int,   default=cfg["hidden_size"])
@@ -45,6 +47,9 @@ def main() -> None:
     if args.device.startswith("cuda") and not torch.cuda.is_available():
         print(f"[WARNING] CUDA not available, falling back to cpu.")
         args.device = "cpu"
+
+    if args.bc_epochs is None:
+        args.bc_epochs = ENV_CONFIG.get(args.env_id, {}).get("bc_epochs", cfg["epochs"])
 
     random.seed(args.seed)
     np.random.seed(args.seed)
