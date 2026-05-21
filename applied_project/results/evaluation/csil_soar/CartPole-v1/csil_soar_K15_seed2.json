@@ -1,0 +1,25 @@
+{
+  "env": "CartPole-v1",
+  "method": "csil_soar",
+  "K": 15,
+  "train_seed": 2,
+  "n_critics": 4,
+  "sigma_clip": 10.0,
+  "mean_return": 499.28999999999996,
+  "std_return": 0.870861642283093,
+  "per_eval_seed_means": [
+    500.0,
+    498.3,
+    500.0,
+    498.15,
+    500.0
+  ],
+  "eval_seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "n_episodes_per_seed": 20
+}
