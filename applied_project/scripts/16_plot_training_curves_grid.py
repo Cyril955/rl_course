@@ -156,10 +156,22 @@ for row, env in enumerate(ENVS):
         if row == len(ENVS) - 1:
             ax.set_xlabel("Training Progress", fontsize=10)
         # Y-labels only on left column (env name doubles as row identifier)
+        # if col == 0:
+        #     env_short = env.replace("-v1", "")
+        #     ax.set_ylabel(f"{env_short}\nReward", fontsize=10)
         if col == 0:
             env_short = env.replace("-v1", "")
-            ax.set_ylabel(f"{env_short}\nReward", fontsize=10)
-
+            ax.set_ylabel("Reward", fontsize=10)
+            ax.text(
+                -0.35, 0.5,          # adjust x offset to taste
+                env_short,
+                transform=ax.transAxes,
+                fontsize=12,
+                fontweight="bold",
+                va="center",
+                ha="center",
+                rotation=90
+            )
 
 # Legend below all subplots
 order       = ["iq_learn", "csil", "csil_soar", "bc", "expert", "random"]
