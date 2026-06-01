@@ -1,0 +1,23 @@
+{
+  "env": "Acrobot-v1",
+  "method": "iq_learn",
+  "K": 3,
+  "train_seed": 4,
+  "mean_return": -107.62,
+  "std_return": 3.036050065463349,
+  "per_eval_seed_means": [
+    -110.55,
+    -104.75,
+    -103.8,
+    -111.45,
+    -107.55
+  ],
+  "eval_seeds": [
+    10,
+    11,
+    12,
+    13,
+    14
+  ],
+  "n_episodes_per_seed": 20
+}

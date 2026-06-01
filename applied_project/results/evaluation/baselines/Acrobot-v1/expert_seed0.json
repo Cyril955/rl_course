@@ -1,8 +1,0 @@
-{
-  "env": "Acrobot-v1",
-  "method": "expert",
-  "seed": 0,
-  "mean_return": -78.85,
-  "std_return": 20.734693149405416,
-  "n_episodes": 20
-}
